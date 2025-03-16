@@ -9,7 +9,7 @@ readme = "README.md"
 packages = [{include = "leds_bailongos"}]
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = "^3.11"
 rpi_ws281x = {version = "^5.0.0", platform = "linux"}
 Adafruit-Blinka = {version = "^8.32.0", platform = "linux"}
 adafruit-circuitpython-neopixel = {version = "^6.3.11", platform = "linux"}
