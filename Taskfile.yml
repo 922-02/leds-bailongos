@@ -1,0 +1,25 @@
+---
+version: "1"
+
+vars:
+  # where to store login tokens when interacting with API through curl
+  # (this dir is included in .gitignore)
+  TOKEN_DIR: "tokens"
+  TOKEN_TYPE: "{{.TOKEN_DIR}}/token_type"
+  ACCESS_TOKEN: "{{.TOKEN_DIR}}/access_token"
+  CURL_RESPONSE: "{{.TOKEN_DIR}}/response"
+
+env:
+  VISUAL:
+    sh: |
+      if [[ -z "$VISUAL" ]]; then
+        echo "WARNING: environment variable VISUAL needs to be set!"
+        #exit 1
+      fi
+
+tasks:
+  venv:clean:
+    desc: Remove all .venvs, npm node_modules, and rustc artifacts and binaries
+    cmds:
+      - rm -fr ./.task/
+      - rm -fr .venv
