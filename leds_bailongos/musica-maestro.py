@@ -124,15 +124,26 @@ class AudioReactiveLEDs:
         return red, green, blue
 
     def run(self) -> None:
+        print(self.play_pos)
         self.calibrate_noise()
 
         try:
-            while self.play_pos < len(self.raw_data):
-                r, g, b = self._get_fft_magnitudes()
-                color = self._map_audio_to_color(r, g, b)
-                self.pixels.fill(color)
-                self.pixels.show()
-                time.sleep(self.chunk_duration)
+            for _ in range(2):
+                self.play_pos = 0
+                print(len(self.raw_data))
+                print(self.play_pos)
+                start_time = time.time()
+                sec_count = 1
+                while self.play_pos < len(self.raw_data):
+                    r, g, b = self._get_fft_magnitudes()
+                    color = self._map_audio_to_color(r, g, b)
+                    self.pixels.fill(color)
+                    self.pixels.show()
+                    time.sleep(self.chunk_duration)
+                    elapsed_time = time.time() - start_time
+                    if elapsed_time > sec_count:
+                        print(sec_count)
+                        sec_count += 1
         except KeyboardInterrupt:
             self.shutdown()
 
