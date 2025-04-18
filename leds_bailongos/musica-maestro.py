@@ -1,27 +1,24 @@
 """
 Audio-Reactive NeoPixel Strip (SPI Version with File Support)
 
-Captures audio input from a microphone or audio file, analyzes it using FFT,
+Captures audio input from an audio file, analyzes it using FFT,
 and maps frequency bands to LED colors.
 
 Requirements:
-- pyaudio
 - numpy
 - neopixel_spi
 - board
-- pydub (for audio file support)
+- pydub (for audio file decoding)
 - ffmpeg (system dependency for decoding .mp3)
 """
 
 import time
 import struct
 import argparse
-from typing import Tuple, Optional
+from typing import Tuple
 
 import numpy as np
-import pyaudio
 from pydub import AudioSegment
-from pydub.playback import _play_with_pyaudio
 
 import board
 import neopixel_spi as neopixel
@@ -35,7 +32,6 @@ BRIGHTNESS_SCALE = 255
 # Audio setup
 CHANNELS = 2
 RATE = 44100
-FORMAT = pyaudio.paInt16
 N_FFT = 512
 BUFFER_SIZE = 4 * N_FFT
 
@@ -53,19 +49,15 @@ class AudioReactiveLEDs:
             auto_write=False
         )
 
-        self.audio = pyaudio.PyAudio()
         self.file_path = file_path
-        self.max_y = float(2 ** (self.audio.get_sample_size(FORMAT) * 8 - 1))
+        self.audio_data = AudioSegment.from_file(file_path).set_channels(CHANNELS).set_frame_rate(RATE)
+        self.raw_data = self.audio_data.raw_data
+        self.max_y = float(2 ** (self.audio_data.sample_width * 8 - 1))
+        self.play_pos = 0
 
         self.offset_r = 0.0
         self.offset_g = 0.0
         self.offset_b = 0.0
-
-        self.audio_data = AudioSegment.from_file(file_path).set_channels(CHANNELS).set_frame_rate(RATE)
-        self.raw_data = self.audio_data.raw_data
-        self.play_pos = 0
-        self.play_obj = _play_with_pyaudio(self.audio_data)
-
 
     def _scale(self, value: float, min_in: float, max_in: float, min_out: float, max_out: float) -> float:
         return np.interp(value, [min_in, max_in], [min_out, max_out])
@@ -75,18 +67,14 @@ class AudioReactiveLEDs:
 
     def _get_fft_magnitudes(self, calibrate: bool = False) -> Tuple[float, float, float]:
         try:
-            # Read next chunk from file
             end = self.play_pos + BUFFER_SIZE * CHANNELS * 2
             chunk = self.raw_data[self.play_pos:end]
             self.play_pos += len(chunk)
             if not chunk:
                 raise EOFError
-
         except (IOError, EOFError):
-            self._restart_audio_stream()
             return 0.0, 0.0, 0.0
 
-        # Unpack audio
         count = len(chunk) // 2
         y = np.array(struct.unpack(f"{count}h", chunk)) / self.max_y
         y_l = y[::2]
@@ -136,23 +124,17 @@ class AudioReactiveLEDs:
         self.calibrate_noise()
 
         try:
-            while True:
+            while self.play_pos < len(self.raw_data):
                 r, g, b = self._get_fft_magnitudes()
                 color = self._map_audio_to_color(r, g, b)
                 self.pixels.fill(color)
                 self.pixels.show()
-                if self.is_file_mode and self.play_pos >= len(self.raw_data):
-                    break
         except KeyboardInterrupt:
             self.shutdown()
 
     def shutdown(self) -> None:
         self.pixels.fill((0, 0, 0))
         self.pixels.show()
-        if not self.is_file_mode:
-            self.stream.stop_stream()
-            self.stream.close()
-        self.audio.terminate()
         print("Audio reactive LEDs stopped.")
 
 
