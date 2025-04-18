@@ -13,6 +13,9 @@ python = "^3.11"
 rpi_ws281x = {version = "^5.0.0", platform = "linux"}
 Adafruit-Blinka = {version = "^8.32.0", platform = "linux"}
 adafruit-circuitpython-neopixel = {version = "^6.3.11", platform = "linux"}
+pi5neo = "^1.0.5"
+spidev = "^3.6"
+adafruit-circuitpython-neopixel-spi = "^1.0.11"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
