@@ -45,7 +45,7 @@ FFT_BRIGHTNESS_MAX = 1000
 
 
 class AudioReactiveLEDs:
-    def __init__(self, file_path: Optional[str] = None):
+    def __init__(self, file_path: str = "music_test/test_01.mp3"):
         self.pixels = neopixel.NeoPixel_SPI(
             spi=board.SPI(),
             n=NUM_PIXELS,
@@ -55,35 +55,17 @@ class AudioReactiveLEDs:
 
         self.audio = pyaudio.PyAudio()
         self.file_path = file_path
-        self.is_file_mode = bool(file_path)
         self.max_y = float(2 ** (self.audio.get_sample_size(FORMAT) * 8 - 1))
 
         self.offset_r = 0.0
         self.offset_g = 0.0
         self.offset_b = 0.0
 
-        if self.is_file_mode:
-            self.audio_data = AudioSegment.from_file(file_path).set_channels(CHANNELS).set_frame_rate(RATE)
-            self.raw_data = self.audio_data.raw_data
-            self.play_pos = 0
-            self.play_obj = _play_with_pyaudio(self.audio_data)
-        else:
-            self.stream = self._open_audio_stream()
+        self.audio_data = AudioSegment.from_file(file_path).set_channels(CHANNELS).set_frame_rate(RATE)
+        self.raw_data = self.audio_data.raw_data
+        self.play_pos = 0
+        self.play_obj = _play_with_pyaudio(self.audio_data)
 
-    def _open_audio_stream(self):
-        return self.audio.open(
-            format=FORMAT,
-            channels=CHANNELS,
-            rate=RATE,
-            input=True,
-            frames_per_buffer=BUFFER_SIZE
-        )
-
-    def _restart_audio_stream(self):
-        if not self.is_file_mode:
-            self.stream.stop_stream()
-            self.stream.close()
-            self.stream = self._open_audio_stream()
 
     def _scale(self, value: float, min_in: float, max_in: float, min_out: float, max_out: float) -> float:
         return np.interp(value, [min_in, max_in], [min_out, max_out])
@@ -93,16 +75,12 @@ class AudioReactiveLEDs:
 
     def _get_fft_magnitudes(self, calibrate: bool = False) -> Tuple[float, float, float]:
         try:
-            if self.is_file_mode:
-                # Read next chunk from file
-                end = self.play_pos + BUFFER_SIZE * CHANNELS * 2
-                chunk = self.raw_data[self.play_pos:end]
-                self.play_pos += len(chunk)
-                if not chunk:
-                    raise EOFError
-            else:
-                available = max(self.stream.get_read_available() / N_FFT, 1) * N_FFT
-                chunk = self.stream.read(int(available))
+            # Read next chunk from file
+            end = self.play_pos + BUFFER_SIZE * CHANNELS * 2
+            chunk = self.raw_data[self.play_pos:end]
+            self.play_pos += len(chunk)
+            if not chunk:
+                raise EOFError
 
         except (IOError, EOFError):
             self._restart_audio_stream()
