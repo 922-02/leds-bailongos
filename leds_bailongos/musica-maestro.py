@@ -1,3 +1,4 @@
+""
 """
 Audio-Reactive NeoPixel Strip (SPI Version with File Support)
 
@@ -54,6 +55,8 @@ class AudioReactiveLEDs:
         self.raw_data = self.audio_data.raw_data
         self.max_y = float(2 ** (self.audio_data.sample_width * 8 - 1))
         self.play_pos = 0
+
+        self.chunk_duration = BUFFER_SIZE / RATE  # Time per audio chunk in seconds
 
         self.offset_r = 0.0
         self.offset_g = 0.0
@@ -129,6 +132,7 @@ class AudioReactiveLEDs:
                 color = self._map_audio_to_color(r, g, b)
                 self.pixels.fill(color)
                 self.pixels.show()
+                time.sleep(self.chunk_duration)
         except KeyboardInterrupt:
             self.shutdown()
 
