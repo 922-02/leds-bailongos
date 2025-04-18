@@ -14,14 +14,19 @@ pixels = neopixel.NeoPixel_SPI(spi,
                                 pixel_order=PIXEL_ORDER,
                                 auto_write=False)
 
-while True:
-    for i in range(NUM_PIXELS):
-        for color in COLORS:
-            pixels[i] = color
-            pixels.show()
-            time.sleep(DELAY)
-            pixels.fill(0)
-            i += 1
+try:
+    while True:
+        for i in range(NUM_PIXELS):
+            for color in COLORS:
+                pixels[i] = color
+                pixels.show()
+                time.sleep(DELAY)
+                pixels.fill(0)
+                if i == NUM_PIXELS - 1:
+                    i = 0
+                    continue
+                i += 1
+
 except KeyboardInterrupt:
     # Turn off all LEDs when the program is interrupted
     pixels.fill(0)
